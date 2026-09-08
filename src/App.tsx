@@ -112,7 +112,7 @@ const Dashboard: React.FC = () => {
 
   const handleUpdateEstado = async (
     punteoId: number,
-    nuevoEstado: 'aprobado' | 'pendiente' | 'rechazado',
+    nuevoEstado: 'aprobado' | 'rechazado',
     comentario?: string
   ) => {
     try {
@@ -215,9 +215,9 @@ const Dashboard: React.FC = () => {
       <ApiConfigModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-        onDataReset={() => {
+        onReloadData={() => {
           reloadData();
-          showToast('Datos de demostración restablecidos');
+          showToast('Datos recargados desde la API');
         }}
       />
     </div>

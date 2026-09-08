@@ -71,7 +71,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 bg-slate-100/70">
               <Radio className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-              <span>{apiConfig.useMockFallback ? 'Modo Demo / Local' : 'API Conectada'}</span>
+              <span>{apiConfig.baseUrl ? 'API Conectada' : 'Sin API configurada'}</span>
             </div>
           </div>
 

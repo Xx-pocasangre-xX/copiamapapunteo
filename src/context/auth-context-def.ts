@@ -7,7 +7,7 @@ export interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   apiConfig: ApiConfig;
-  login: (correo: string, pass: string, forceMock?: boolean) => Promise<void>;
+  login: (correo: string, pass: string) => Promise<void>;
   logout: () => void;
   updateApiConfig: (config: ApiConfig) => void;
   clearError: () => void;

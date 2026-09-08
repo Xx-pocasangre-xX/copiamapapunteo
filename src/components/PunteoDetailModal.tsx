@@ -20,7 +20,7 @@ import type { Punteo, PunteoDocumento } from '../types';
 interface PunteoDetailModalProps {
   punteo: Punteo | null;
   onClose: () => void;
-  onUpdateEstado: (punteoId: number, nuevoEstado: 'aprobado' | 'pendiente' | 'rechazado', comentario?: string) => Promise<void>;
+  onUpdateEstado: (punteoId: number, nuevoEstado: 'aprobado' | 'rechazado', comentario?: string) => Promise<void>;
 }
 
 export const PunteoDetailModal: React.FC<PunteoDetailModalProps> = ({

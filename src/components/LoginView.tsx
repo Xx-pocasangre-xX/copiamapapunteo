@@ -12,26 +12,19 @@ import { useAuth } from '../context/useAuth';
 import { CompanyLogo } from './CompanyLogo';
 
 export const LoginView: React.FC = () => {
-  const { login, isLoading, error, clearError, apiConfig } = useAuth();
+  const { login, isLoading, error, clearError } = useAuth();
 
-  const [correo, setCorreo] = useState('carlos.mendoza@empresa.com.sv');
-  const [password, setPassword] = useState('super123');
+  const [correo, setCorreo] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isDemoMode, setIsDemoMode] = useState(apiConfig.useMockFallback);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await login(correo, password, isDemoMode);
+      await login(correo, password);
     } catch {
       // Error is caught and stored in AuthContext
     }
-  };
-
-  const handleQuickSelectUser = (email: string, pass: string) => {
-    setCorreo(email);
-    setPassword(pass);
-    clearError();
   };
 
   return (
@@ -124,24 +117,6 @@ export const LoginView: React.FC = () => {
               </div>
             </div>
 
-            {/* Mode Selector Pill */}
-            <div className="pt-1 flex items-center justify-between text-xs text-slate-600">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isDemoMode}
-                  onChange={(e) => setIsDemoMode(e.target.checked)}
-                  className="rounded border-slate-300 text-red-600 focus:ring-red-500 h-3.5 w-3.5"
-                />
-                <span className="text-[11px] font-medium text-slate-600">
-                  Modo Demostración / Standalone
-                </span>
-              </label>
-              <span className="text-[10px] text-red-700 font-semibold bg-red-50 px-2 py-0.5 rounded border border-red-200">
-                {isDemoMode ? 'Datos Locales' : 'API Externa'}
-              </span>
-            </div>
-
             {/* Submit Button */}
             <button
               type="submit"
@@ -161,41 +136,6 @@ export const LoginView: React.FC = () => {
               )}
             </button>
           </form>
-
-          {/* Quick Credential Presets */}
-          <div className="mt-6 pt-5 border-t border-slate-100">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2 text-center">
-              Perfiles Rápidos para Pruebas
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickSelectUser('carlos.mendoza@empresa.com.sv', 'super123')}
-                className="text-left p-2 rounded-lg border border-slate-200 hover:border-red-400 bg-slate-50 hover:bg-red-50/40 transition-all text-[11px]"
-              >
-                <span className="font-bold text-slate-800 block truncate">Carlos M.</span>
-                <span className="text-[10px] text-amber-600 font-medium">Supervisor</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickSelectUser('maria.torres@empresa.com.sv', 'auditor123')}
-                className="text-left p-2 rounded-lg border border-slate-200 hover:border-red-400 bg-slate-50 hover:bg-red-50/40 transition-all text-[11px]"
-              >
-                <span className="font-bold text-slate-800 block truncate">María T.</span>
-                <span className="text-[10px] text-emerald-600 font-medium">Auditor</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickSelectUser('admin@empresa.com.sv', 'admin123')}
-                className="text-left p-2 rounded-lg border border-slate-200 hover:border-red-400 bg-slate-50 hover:bg-red-50/40 transition-all text-[11px]"
-              >
-                <span className="font-bold text-slate-800 block truncate">Admin</span>
-                <span className="text-[10px] text-red-600 font-medium">Administrador</span>
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Security Footer Note */}

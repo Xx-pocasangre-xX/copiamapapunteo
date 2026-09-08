@@ -1,10 +1,8 @@
 import CryptoJS from 'crypto-js';
-import { PUNTEOS_MOCK, SUPERVISORES_MOCK, DOCUMENTOS_MOCK } from '../data/mockData';
 import type { ApiConfig, FilterState, Punteo, PunteoDocumento, SupervisorOption, User } from '../types';
 
 const STORAGE_KEY_CONFIG = 'mapa_punteo_api_config';
 const STORAGE_KEY_AUTH = 'mapa_punteo_auth_user';
-const STORAGE_KEY_PUNTEOS = 'mapa_punteo_custom_punteos';
 
 export const EVENTO_SESION_EXPIRADA = 'mapa_punteo:sesion-expirada';
 
@@ -16,7 +14,6 @@ const AES_IV = import.meta.env.VITE_LOGIN_POS_AES_IV || 'rvVectorInicio26';
 export const DEFAULT_API_CONFIG: ApiConfig = {
   baseUrl: (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '').replace(/\/+$/, ''),
   authUrl: import.meta.env.VITE_AUTH_API_URL || '',
-  useMockFallback: true,
   apiKey: '',
 };
 
@@ -221,19 +218,16 @@ function aplicarFiltrosLocales(lista: Punteo[], filters?: Partial<FilterState>):
   return results;
 }
 
-// Memory store for mutated punteos in demo mode
-let inMemoryPunteos: Punteo[] = (() => {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY_PUNTEOS);
-    if (saved) return JSON.parse(saved);
-  } catch {
-    // fallback
+function requerirBaseUrl(config: ApiConfig): void {
+  if (!config.baseUrl) {
+    throw new Error(
+      'No hay una URL de API configurada. Ábrela desde el ícono de configuración y define la URL base de ERPAPI.'
+    );
   }
-  return [...PUNTEOS_MOCK];
-})();
+}
 
-// Cache del último listado completo obtenido de la API real, para no repetir
-// la petición al pedir los documentos o los supervisores de un solo punteo.
+// Cache del último listado completo obtenido de la API, para no repetir la
+// petición al pedir los documentos o los supervisores de un solo punteo.
 let cachePunteosApi: Punteo[] | null = null;
 
 async function obtenerPunteosDeApi(config: ApiConfig, estado?: string): Promise<Punteo[]> {
@@ -253,254 +247,135 @@ async function obtenerPunteosDeApi(config: ApiConfig, estado?: string): Promise<
 }
 
 export const apiService = {
-  async login(correo: string, password: string, forceMock = false): Promise<{ user: User; token: string }> {
+  async login(correo: string, password: string): Promise<{ user: User; token: string }> {
     const config = getStoredApiConfig();
     const authUrl = resolveAuthUrl(config);
 
-    if (!forceMock && authUrl) {
-      try {
-        const response = await fetch(authUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(config.apiKey ? { 'X-API-Key': config.apiKey } : {}),
-          },
-          body: JSON.stringify({
-            username: correo.trim(),
-            password: encriptarPassword(password),
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const user: User = {
-            id: data.oid || 'usr-' + Date.now(),
-            nombre: data.nombre || correo.split('@')[0],
-            correo: correo.trim(),
-            codigo: data.supervisorCodigo || undefined,
-            rol: 'supervisor',
-            token: data.token,
-            avatarUrl: undefined,
-          };
-          saveStoredUser(user);
-          return { user, token: user.token || '' };
-        }
-
-        if (response.status === 401) {
-          throw new Error('Usuario o contraseña incorrectos, o el usuario no tiene un supervisor asignado.');
-        }
-
-        if (!config.useMockFallback) {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(errData.title || errData.message || `Error de autenticación (${response.status})`);
-        }
-      } catch (err: unknown) {
-        if (!config.useMockFallback) {
-          throw err;
-        }
-        console.warn('Conexión con API externa falló, usando autenticación demo:', err);
-      }
+    if (!authUrl) {
+      throw new Error(
+        'No hay una URL de API configurada. Ábrela desde el ícono de configuración y define la URL base de ERPAPI.'
+      );
     }
 
-    // Demo / Mock fallback validation
-    await new Promise((resolve) => setTimeout(resolve, 400));
+    const response = await fetch(authUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(config.apiKey ? { 'X-API-Key': config.apiKey } : {}),
+      },
+      body: JSON.stringify({
+        username: correo.trim(),
+        password: encriptarPassword(password),
+      }),
+    });
 
-    if (!correo || !password) {
-      throw new Error('Por favor ingresa tu correo y contraseña');
+    if (response.status === 401) {
+      throw new Error('Usuario o contraseña incorrectos, o el usuario no tiene un supervisor asignado.');
     }
 
-    // Default demo users
-    let rol: User['rol'] = 'administrador';
-    let nombre = 'Lic. Alejandro Morales';
-    let codigo = 'ADM-01';
-
-    if (correo.includes('supervisor') || correo.includes('carlos')) {
-      rol = 'supervisor';
-      nombre = 'Carlos Eduardo Mendoza';
-      codigo = 'SUP-01';
-    } else if (correo.includes('auditor') || correo.includes('maria')) {
-      rol = 'auditor';
-      nombre = 'María Elena Torres';
-      codigo = 'SUP-02';
-    } else if (correo.includes('analista')) {
-      rol = 'analista';
-      nombre = 'Analista de Operaciones';
-      codigo = 'ANA-01';
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.title || errData.message || `Error de autenticación (${response.status})`);
     }
 
-    const mockUser: User = {
-      id: 'usr-demo-' + Math.floor(Math.random() * 1000),
-      nombre,
-      correo,
-      codigo,
-      rol,
-      token: 'demo_jwt_token_' + btoa(correo),
+    const data = await response.json();
+    const user: User = {
+      id: data.oid || 'usr-' + Date.now(),
+      nombre: data.nombre || correo.split('@')[0],
+      correo: correo.trim(),
+      codigo: data.supervisorCodigo || undefined,
+      rol: 'supervisor',
+      token: data.token,
+      avatarUrl: undefined,
     };
-
-    saveStoredUser(mockUser);
-    return { user: mockUser, token: mockUser.token || '' };
+    saveStoredUser(user);
+    return { user, token: user.token || '' };
   },
 
   async getSupervisores(): Promise<SupervisorOption[]> {
     const config = getStoredApiConfig();
+    requerirBaseUrl(config);
 
-    if (config.baseUrl) {
-      try {
-        const lista = cachePunteosApi ?? (await obtenerPunteosDeApi(config));
-        const porCodigo = new Map<string, SupervisorOption>();
-        for (const p of lista) {
-          if (!p.creado_por_codigo) continue;
-          const existente = porCodigo.get(p.creado_por_codigo);
-          if (existente) {
-            existente.totalPunteos += 1;
-          } else {
-            porCodigo.set(p.creado_por_codigo, {
-              codigo: p.creado_por_codigo,
-              nombre: p.creado_por_nombre || p.creado_por_codigo,
-              oid: p.creado_por_oid,
-              totalPunteos: 1,
-            });
-          }
-        }
-        return Array.from(porCodigo.values()).sort((a, b) => a.nombre.localeCompare(b.nombre));
-      } catch (err) {
-        console.warn('Fallback a supervisores locales:', err);
-        if (!config.useMockFallback) throw err;
+    const lista = cachePunteosApi ?? (await obtenerPunteosDeApi(config));
+    const porCodigo = new Map<string, SupervisorOption>();
+    for (const p of lista) {
+      if (!p.creado_por_codigo) continue;
+      const existente = porCodigo.get(p.creado_por_codigo);
+      if (existente) {
+        existente.totalPunteos += 1;
+      } else {
+        porCodigo.set(p.creado_por_codigo, {
+          codigo: p.creado_por_codigo,
+          nombre: p.creado_por_nombre || p.creado_por_codigo,
+          oid: p.creado_por_oid,
+          totalPunteos: 1,
+        });
       }
     }
-
-    // Calculate dynamic counts from current in-memory punteos
-    return SUPERVISORES_MOCK.map((sup) => {
-      const count = inMemoryPunteos.filter((p) => p.creado_por_codigo === sup.codigo).length;
-      return {
-        ...sup,
-        totalPunteos: count,
-      };
-    });
+    return Array.from(porCodigo.values()).sort((a, b) => a.nombre.localeCompare(b.nombre));
   },
 
   async getPunteos(filters?: Partial<FilterState>): Promise<Punteo[]> {
     const config = getStoredApiConfig();
+    requerirBaseUrl(config);
 
-    if (config.baseUrl) {
-      try {
-        const lista = await obtenerPunteosDeApi(config, filters?.estado);
-        return aplicarFiltrosLocales(lista, { ...filters, estado: undefined });
-      } catch (err) {
-        console.warn('Error fetching live punteos, using local data:', err);
-        if (!config.useMockFallback) throw err;
-      }
-    }
-
-    return aplicarFiltrosLocales(
-      inMemoryPunteos.map((p) => ({ ...p, documentos: DOCUMENTOS_MOCK[p.id] || [] })),
-      filters
-    );
+    const lista = await obtenerPunteosDeApi(config, filters?.estado);
+    return aplicarFiltrosLocales(lista, { ...filters, estado: undefined });
   },
 
   async getPunteoDocumentos(punteoId: number): Promise<PunteoDocumento[]> {
     const config = getStoredApiConfig();
+    requerirBaseUrl(config);
 
-    if (config.baseUrl) {
-      try {
-        const lista = cachePunteosApi ?? (await obtenerPunteosDeApi(config));
-        const punteo = lista.find((p) => p.id === punteoId);
-        if (punteo) return punteo.documentos || [];
-      } catch (err) {
-        console.warn('Error fetching documentos:', err);
-        if (!config.useMockFallback) throw err;
-      }
-    }
-
-    return DOCUMENTOS_MOCK[punteoId] || [];
+    const lista = cachePunteosApi ?? (await obtenerPunteosDeApi(config));
+    const punteo = lista.find((p) => p.id === punteoId);
+    return punteo?.documentos || [];
   },
 
   async updatePunteoEstado(
     punteoId: number,
-    estado: 'aprobado' | 'pendiente' | 'rechazado',
+    estado: 'aprobado' | 'rechazado',
     comentarioRechazo?: string | null
   ): Promise<Punteo> {
     const config = getStoredApiConfig();
+    requerirBaseUrl(config);
 
-    if (config.baseUrl) {
-      if (estado === 'pendiente') {
+    const punteosUrl = resolvePunteosUrl(config);
+
+    if (estado === 'aprobado') {
+      const listaActual = cachePunteosApi ?? (await obtenerPunteosDeApi(config));
+      const actual = listaActual.find((p) => p.id === punteoId);
+      const clienteErpId = actual?.cliente_erp_id;
+
+      if (!clienteErpId || clienteErpId <= 0) {
         throw new Error(
-          'La API no permite regresar un punteo a estado "pendiente" una vez resuelto. Esta acción solo está disponible en modo demostración.'
+          'Este registro aún no tiene un Cliente ERP asociado. Debe aprobarse primero desde la aplicación de aprobación de punteos, que crea el cliente en el ERP antes de marcarlo como aprobado.'
         );
       }
 
-      try {
-        const punteosUrl = resolvePunteosUrl(config);
-
-        if (estado === 'aprobado') {
-          const listaActual = cachePunteosApi ?? (await obtenerPunteosDeApi(config));
-          const actual = listaActual.find((p) => p.id === punteoId);
-          const clienteErpId = actual?.cliente_erp_id;
-
-          if (!clienteErpId || clienteErpId <= 0) {
-            throw new Error(
-              'Este registro aún no tiene un Cliente ERP asociado. Debe aprobarse primero desde la aplicación de aprobación de punteos, que crea el cliente en el ERP antes de marcarlo como aprobado.'
-            );
-          }
-
-          const res = await fetch(`${punteosUrl}/${punteoId}/aprobar`, {
-            method: 'PUT',
-            headers: construirHeaders(config, { 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ clienteErpId }),
-          });
-          await manejarRespuestaProtegida(res);
-        } else {
-          const res = await fetch(`${punteosUrl}/${punteoId}/rechazar`, {
-            method: 'PUT',
-            headers: construirHeaders(config, { 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ comentario: comentarioRechazo || null }),
-          });
-          await manejarRespuestaProtegida(res);
-        }
-
-        // El backend solo responde con un mensaje de confirmación, no con el
-        // registro actualizado; se vuelve a consultar para reflejar el estado real.
-        cachePunteosApi = null;
-        const listaActualizada = await obtenerPunteosDeApi(config);
-        const actualizado = listaActualizada.find((p) => p.id === punteoId);
-        if (!actualizado) {
-          throw new Error('El punteo se actualizó pero no se pudo recargar su información más reciente.');
-        }
-        return actualizado;
-      } catch (err) {
-        if (!config.useMockFallback) throw err;
-        console.warn('Error actualizando estado en API, aplicando cambio en modo demo:', err);
-      }
+      const res = await fetch(`${punteosUrl}/${punteoId}/aprobar`, {
+        method: 'PUT',
+        headers: construirHeaders(config, { 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ clienteErpId }),
+      });
+      await manejarRespuestaProtegida(res);
+    } else {
+      const res = await fetch(`${punteosUrl}/${punteoId}/rechazar`, {
+        method: 'PUT',
+        headers: construirHeaders(config, { 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ comentario: comentarioRechazo || null }),
+      });
+      await manejarRespuestaProtegida(res);
     }
 
-    // Local mutation (demo mode / fallback)
-    const idx = inMemoryPunteos.findIndex((p) => p.id === punteoId);
-    if (idx !== -1) {
-      const updated: Punteo = {
-        ...inMemoryPunteos[idx],
-        estado,
-        comentario_rechazo: estado === 'rechazado' ? comentarioRechazo || 'Rechazado en auditoría' : null,
-        fecha_resolucion: new Date().toISOString(),
-      };
-      inMemoryPunteos[idx] = updated;
-      try {
-        localStorage.setItem(STORAGE_KEY_PUNTEOS, JSON.stringify(inMemoryPunteos));
-      } catch {
-        // ignore storage error
-      }
-      return updated;
-    }
-
-    throw new Error('Punteo no encontrado');
-  },
-
-  resetDemoData(): void {
-    inMemoryPunteos = [...PUNTEOS_MOCK];
+    // El backend solo responde con un mensaje de confirmación, no con el
+    // registro actualizado; se vuelve a consultar para reflejar el estado real.
     cachePunteosApi = null;
-    try {
-      localStorage.removeItem(STORAGE_KEY_PUNTEOS);
-    } catch {
-      // ignore
+    const listaActualizada = await obtenerPunteosDeApi(config);
+    const actualizado = listaActualizada.find((p) => p.id === punteoId);
+    if (!actualizado) {
+      throw new Error('El punteo se actualizó pero no se pudo recargar su información más reciente.');
     }
+    return actualizado;
   },
 };

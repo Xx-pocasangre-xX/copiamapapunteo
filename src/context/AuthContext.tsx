@@ -25,11 +25,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => window.removeEventListener(EVENTO_SESION_EXPIRADA, handleSesionExpirada);
   }, []);
 
-  const login = async (correo: string, pass: string, forceMock = false) => {
+  const login = async (correo: string, pass: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      const { user: loggedInUser } = await apiService.login(correo, pass, forceMock);
+      const { user: loggedInUser } = await apiService.login(correo, pass);
       setUser(loggedInUser);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al iniciar sesión';

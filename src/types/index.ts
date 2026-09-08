@@ -76,6 +76,5 @@ export interface FilterState {
 export interface ApiConfig {
   baseUrl: string;
   authUrl: string;
-  useMockFallback: boolean;
   apiKey?: string;
 }

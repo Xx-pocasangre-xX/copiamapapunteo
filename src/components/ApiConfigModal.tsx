@@ -8,24 +8,22 @@ import {
   Save,
 } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
-import { apiService } from '../services/api';
 
 interface ApiConfigModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onDataReset: () => void;
+  onReloadData: () => void;
 }
 
 export const ApiConfigModal: React.FC<ApiConfigModalProps> = ({
   isOpen,
   onClose,
-  onDataReset,
+  onReloadData,
 }) => {
   const { apiConfig, updateApiConfig } = useAuth();
 
   const [baseUrl, setBaseUrl] = useState(apiConfig.baseUrl);
   const [authUrl, setAuthUrl] = useState(apiConfig.authUrl);
-  const [useMockFallback, setUseMockFallback] = useState(apiConfig.useMockFallback);
   const [apiKey, setApiKey] = useState(apiConfig.apiKey || '');
 
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
@@ -38,9 +36,9 @@ export const ApiConfigModal: React.FC<ApiConfigModalProps> = ({
     updateApiConfig({
       baseUrl: baseUrl.trim(),
       authUrl: authUrl.trim(),
-      useMockFallback,
       apiKey: apiKey.trim(),
     });
+    onReloadData();
     onClose();
   };
 
@@ -63,14 +61,6 @@ export const ApiConfigModal: React.FC<ApiConfigModalProps> = ({
       setTestMessage(
         err instanceof Error ? err.message : 'No se pudo contactar con el endpoint configurado'
       );
-    }
-  };
-
-  const handleResetData = () => {
-    if (window.confirm('¿Deseas restablecer todos los punteos a los valores originales de prueba?')) {
-      apiService.resetDemoData();
-      onDataReset();
-      onClose();
     }
   };
 
@@ -146,24 +136,6 @@ export const ApiConfigModal: React.FC<ApiConfigModalProps> = ({
             />
           </div>
 
-          {/* Toggle Fallback */}
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-            <label className="flex items-center space-x-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={useMockFallback}
-                onChange={(e) => setUseMockFallback(e.target.checked)}
-                className="rounded text-red-600 focus:ring-red-500 h-4 w-4"
-              />
-              <span className="font-bold text-slate-800">
-                Fallback automático a datos demo si la API no responde
-              </span>
-            </label>
-            <p className="text-[11px] text-slate-500 pl-6.5 leading-relaxed">
-              Permite continuar navegando y visualizando el mapa con datos simulados si la red o el backend remoto se encuentran offline.
-            </p>
-          </div>
-
           {/* Connection Test Result */}
           {testStatus !== 'idle' && (
             <div
@@ -191,14 +163,6 @@ export const ApiConfigModal: React.FC<ApiConfigModalProps> = ({
                 className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs transition-colors"
               >
                 Probar Conexión
-              </button>
-
-              <button
-                type="button"
-                onClick={handleResetData}
-                className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold rounded-lg text-xs transition-colors"
-              >
-                Resetear Demo
               </button>
             </div>
 
