@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Variables de entorno (no debe subirse al repo, solo .env.example)
+.env
