@@ -20,7 +20,7 @@ import {
 
 const INITIAL_FILTERS: FilterState = {
   supervisorCodigo: 'todos',
-  fecha: '2026-09-05', // Context date (Hoy)
+  fecha: '',
   fechaFin: '',
   estado: 'todos',
   departamento: 'todos',

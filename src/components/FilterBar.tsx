@@ -39,15 +39,24 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     onFilterChange({ searchQuery: e.target.value });
   };
 
+  const formatDate = (date: Date) => date.toISOString().slice(0, 10);
+
   const setDatePreset = (preset: 'hoy' | 'ayer' | 'todos') => {
     if (preset === 'hoy') {
-      onFilterChange({ fecha: '2026-09-05' });
+      onFilterChange({ fecha: formatDate(new Date()) });
     } else if (preset === 'ayer') {
-      onFilterChange({ fecha: '2026-09-04' });
+      const ayer = new Date();
+      ayer.setDate(ayer.getDate() - 1);
+      onFilterChange({ fecha: formatDate(ayer) });
     } else {
       onFilterChange({ fecha: '' });
     }
   };
+
+  const hoyStr = formatDate(new Date());
+  const ayerDate = new Date();
+  ayerDate.setDate(ayerDate.getDate() - 1);
+  const ayerStr = formatDate(ayerDate);
 
   const hasActiveFilters =
     filters.supervisorCodigo !== 'todos' ||
@@ -103,7 +112,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   type="button"
                   onClick={() => setDatePreset('hoy')}
                   className={`text-[10px] px-2 py-0.5 rounded font-semibold transition-colors ${
-                    filters.fecha === '2026-09-05'
+                    filters.fecha === hoyStr
                       ? 'bg-red-600 text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
@@ -114,7 +123,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   type="button"
                   onClick={() => setDatePreset('ayer')}
                   className={`text-[10px] px-2 py-0.5 rounded font-semibold transition-colors ${
-                    filters.fecha === '2026-09-04'
+                    filters.fecha === ayerStr
                       ? 'bg-red-600 text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}

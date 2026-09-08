@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { ApiConfig, User } from '../types';
 import {
   apiService,
+  EVENTO_SESION_EXPIRADA,
   getStoredApiConfig,
   getStoredUser,
   saveStoredApiConfig,
@@ -14,6 +15,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [apiConfig, setApiConfig] = useState<ApiConfig>(() => getStoredApiConfig());
+
+  useEffect(() => {
+    const handleSesionExpirada = () => {
+      setUser(null);
+      setError('Tu sesión expiró. Inicia sesión de nuevo.');
+    };
+    window.addEventListener(EVENTO_SESION_EXPIRADA, handleSesionExpirada);
+    return () => window.removeEventListener(EVENTO_SESION_EXPIRADA, handleSesionExpirada);
+  }, []);
 
   const login = async (correo: string, pass: string, forceMock = false) => {
     setIsLoading(true);

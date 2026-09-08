@@ -99,35 +99,37 @@ export const ApiConfigModal: React.FC<ApiConfigModalProps> = ({
           
           <div>
             <label className="block text-slate-700 font-bold uppercase tracking-wider mb-1">
-              Endpoint de Autenticación (Login API)
+              URL Base de ERPAPI (Backend)
+            </label>
+            <input
+              type="url"
+              value={baseUrl}
+              onChange={(e) => setBaseUrl(e.target.value)}
+              placeholder="https://api.empresa.com"
+              className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-red-500 font-mono"
+            />
+            <p className="text-[11px] text-slate-400 mt-1">
+              Raíz del backend ERPAPI. Se consulta <code>/api/appPunteo</code> para los registros y{' '}
+              <code>/api/auth/login-punteo</code> para el login (usuario en formato{' '}
+              <code>usuario@tenant</code>), salvo que se indique otro endpoint abajo.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-slate-700 font-bold uppercase tracking-wider mb-1">
+              Endpoint de Autenticación (Opcional)
             </label>
             <div className="relative">
               <input
                 type="url"
                 value={authUrl}
                 onChange={(e) => setAuthUrl(e.target.value)}
-                placeholder="https://auth.api-empresa.com/v1/auth/login"
+                placeholder="https://api.empresa.com/api/auth/login-punteo"
                 className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-red-500 font-mono"
               />
             </div>
             <p className="text-[11px] text-slate-400 mt-1">
-              URL donde se enviarán las credenciales (POST con correo y contraseña).
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-slate-700 font-bold uppercase tracking-wider mb-1">
-              URL Base API de Punteos (Backend)
-            </label>
-            <input
-              type="url"
-              value={baseUrl}
-              onChange={(e) => setBaseUrl(e.target.value)}
-              placeholder="https://api.empresa.com/v1"
-              className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-red-500 font-mono"
-            />
-            <p className="text-[11px] text-slate-400 mt-1">
-              Endpoints estándar consultados: <code>/punteos</code>, <code>/supervisores</code>.
+              Déjalo vacío para usar <code>{'{URL Base}'}/api/auth/login-punteo</code> automáticamente.
             </p>
           </div>
 

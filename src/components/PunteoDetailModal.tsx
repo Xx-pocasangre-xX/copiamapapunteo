@@ -78,15 +78,6 @@ export const PunteoDetailModal: React.FC<PunteoDetailModalProps> = ({
     }
   };
 
-  const handleSetPending = async () => {
-    setIsSubmitting(true);
-    try {
-      await onUpdateEstado(punteo.id, 'pendiente');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const formattedDate = new Date(punteo.fecha_registro).toLocaleString('es-SV', {
     dateStyle: 'full',
     timeStyle: 'medium',
@@ -500,17 +491,6 @@ export const PunteoDetailModal: React.FC<PunteoDetailModalProps> = ({
               >
                 <XCircle className="w-3.5 h-3.5" />
                 <span>Rechazar</span>
-              </button>
-            )}
-
-            {punteo.estado !== 'pendiente' && (
-              <button
-                type="button"
-                onClick={handleSetPending}
-                disabled={isSubmitting}
-                className="bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold px-3 py-2 rounded-lg transition-colors"
-              >
-                Marcar Pendiente
               </button>
             )}
 
