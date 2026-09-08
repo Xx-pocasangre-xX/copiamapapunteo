@@ -89,19 +89,19 @@ export const ApiConfigModal: React.FC<ApiConfigModalProps> = ({
           
           <div>
             <label className="block text-slate-700 font-bold uppercase tracking-wider mb-1">
-              URL Base de ERPAPI (Backend)
+              URL de la API de Punteos (appPunteo)
             </label>
             <input
               type="url"
               value={baseUrl}
               onChange={(e) => setBaseUrl(e.target.value)}
-              placeholder="https://api.empresa.com"
+              placeholder="https://api.empresa.com/api/appPunteo"
               className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-red-500 font-mono"
             />
             <p className="text-[11px] text-slate-400 mt-1">
-              Raíz del backend ERPAPI. Se consulta <code>/api/appPunteo</code> para los registros y{' '}
-              <code>/api/auth/login-punteo</code> para el login (usuario en formato{' '}
-              <code>usuario@tenant</code>), salvo que se indique otro endpoint abajo.
+              URL completa del endpoint <code>/api/appPunteo</code> de ERPAPI (misma convención que
+              usa InterfazPunteo). El login se deriva automáticamente del origen de esta URL:{' '}
+              <code>{'{origen}'}/api/auth/login-pos</code>, salvo que se indique otro endpoint abajo.
             </p>
           </div>
 
@@ -114,12 +114,12 @@ export const ApiConfigModal: React.FC<ApiConfigModalProps> = ({
                 type="url"
                 value={authUrl}
                 onChange={(e) => setAuthUrl(e.target.value)}
-                placeholder="https://api.empresa.com/api/auth/login-punteo"
+                placeholder="https://api.empresa.com/api/auth/login-pos"
                 className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-800 focus:bg-white focus:ring-2 focus:ring-red-500 font-mono"
               />
             </div>
             <p className="text-[11px] text-slate-400 mt-1">
-              Déjalo vacío para usar <code>{'{URL Base}'}/api/auth/login-punteo</code> automáticamente.
+              Déjalo vacío para usar <code>{'{origen de la URL anterior}'}/api/auth/login-pos</code> automáticamente.
             </p>
           </div>
 

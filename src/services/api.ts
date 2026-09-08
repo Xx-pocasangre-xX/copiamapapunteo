@@ -63,18 +63,20 @@ function forzarCierreSesion(): void {
 }
 
 // --- Resolución de endpoints reales de ERPAPI (módulo appPunteo) ---
-
-function sinBarraFinal(url: string): string {
-  return url.replace(/\/+$/, '');
-}
+//
+// Misma convención que usa InterfazPunteo (src/api/punteoApi.js): VITE_API_BASE_URL
+// es la URL COMPLETA del endpoint de punteos (ej: https://api.empresa.com/api/appPunteo),
+// no solo la raíz del dominio. El endpoint de login se deriva del origen de esa URL
+// con `new URL('/api/auth', API_BASE_URL)`, tal como hace InterfazPunteo.
 
 function resolveAuthUrl(config: ApiConfig): string {
   if (config.authUrl && config.authUrl.trim()) return config.authUrl.trim();
-  return config.baseUrl ? `${sinBarraFinal(config.baseUrl)}/api/auth/login-punteo` : '';
+  if (!config.baseUrl) return '';
+  return `${new URL('/api/auth', config.baseUrl).toString().replace(/\/+$/, '')}/login-pos`;
 }
 
 function resolvePunteosUrl(config: ApiConfig): string {
-  return config.baseUrl ? `${sinBarraFinal(config.baseUrl)}/api/appPunteo` : '';
+  return config.baseUrl ? config.baseUrl.replace(/\/+$/, '') : '';
 }
 
 function encriptarPassword(passwordPlano: string): string {
@@ -111,7 +113,13 @@ async function manejarRespuestaProtegida(res: Response): Promise<void> {
 function urlAbsolutaDocumento(baseUrl: string, ruta?: string | null): string | undefined {
   if (!ruta) return undefined;
   if (/^https?:\/\//i.test(ruta)) return ruta;
-  return `${sinBarraFinal(baseUrl)}${ruta.startsWith('/') ? '' : '/'}${ruta}`;
+  // Igual que obtenerUrlDocumento() en InterfazPunteo: al ser una ruta absoluta
+  // (empieza con "/"), new URL() la resuelve contra el origen de baseUrl.
+  try {
+    return new URL(ruta, baseUrl).toString();
+  } catch {
+    return undefined;
+  }
 }
 
 // El endpoint de listado (GET /api/appPunteo) de ERPAPI serializa en camelCase
@@ -221,7 +229,7 @@ function aplicarFiltrosLocales(lista: Punteo[], filters?: Partial<FilterState>):
 function requerirBaseUrl(config: ApiConfig): void {
   if (!config.baseUrl) {
     throw new Error(
-      'No hay una URL de API configurada. Ábrela desde el ícono de configuración y define la URL base de ERPAPI.'
+      'No hay una URL de API configurada. Ábrela desde el ícono de configuración y define la URL de la API de Punteos (appPunteo).'
     );
   }
 }
@@ -253,7 +261,7 @@ export const apiService = {
 
     if (!authUrl) {
       throw new Error(
-        'No hay una URL de API configurada. Ábrela desde el ícono de configuración y define la URL base de ERPAPI.'
+        'No hay una URL de API configurada. Ábrela desde el ícono de configuración y define la URL de la API de Punteos (appPunteo).'
       );
     }
 
@@ -270,7 +278,7 @@ export const apiService = {
     });
 
     if (response.status === 401) {
-      throw new Error('Usuario o contraseña incorrectos, o el usuario no tiene un supervisor asignado.');
+      throw new Error('Usuario o contraseña incorrectos.');
     }
 
     if (!response.ok) {
@@ -283,8 +291,8 @@ export const apiService = {
       id: data.oid || 'usr-' + Date.now(),
       nombre: data.nombre || correo.split('@')[0],
       correo: correo.trim(),
-      codigo: data.supervisorCodigo || undefined,
-      rol: 'supervisor',
+      codigo: data.codigoAuxiliar || undefined,
+      rol: 'administrador',
       token: data.token,
       avatarUrl: undefined,
     };
